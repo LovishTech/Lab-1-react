@@ -4,7 +4,7 @@
 - Lovish Batra (Lead Developer)
 - Reeya Dhamu (Designer)
 - Jashan Brar (Stakeholder)
-- Class Code: [Add class code here]
+- Class Code: TSW210
 
 ---
 
