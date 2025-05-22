@@ -11,6 +11,8 @@ import Footer from "./footer";
 import "./App.css";
 import "./auth-chatbot.css"; // Import the new CSS file4
 import "./HomePage.css";
+import "./ThreadList.css";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const [refresh, setRefresh] = useState(false);

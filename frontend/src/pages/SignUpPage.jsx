@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function SignUpPage({ onLogin }) {
+function SignUpPage() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -14,47 +14,47 @@ function SignUpPage({ onLogin }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
-    // Basic validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
     }
-    
     setLoading(true);
-    
-    // Simulate API call for registration
-    setTimeout(() => {
-      // For demo purposes, simulate successful registration
-      // In real implementation, you would send data to your backend
-      const userData = { 
-        email: formData.email,
-        fullName: formData.fullName 
-      };
-      
-      localStorage.setItem("user", JSON.stringify(userData));
-      
-      // Call the onLogin function from props
-      onLogin(userData);
-      
-      // Redirect to home page
-      navigate("/");
-      setLoading(false);
-    }, 1000);
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          (Array.isArray(data.error) && data.error[0]?.msg) ||
+            data.error ||
+            "Registration failed"
+        );
+        setLoading(false);
+        return;
+      }
+      // Redirect to sign in page after successful sign up
+      navigate("/signin");
+    } catch (err) {
+      setError("Server error");
+    }
+    setLoading(false);
   };
 
   return (
@@ -65,9 +65,7 @@ function SignUpPage({ onLogin }) {
             <h1>Create Account</h1>
             <p>Join the ProDiscuss community</p>
           </div>
-          
           {error && <div className="auth-error">{error}</div>}
-          
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="fullName">Full Name</label>
@@ -81,7 +79,6 @@ function SignUpPage({ onLogin }) {
                 required
               />
             </div>
-            
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -94,7 +91,6 @@ function SignUpPage({ onLogin }) {
                 required
               />
             </div>
-            
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <input
@@ -107,7 +103,6 @@ function SignUpPage({ onLogin }) {
                 required
               />
             </div>
-            
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirm Password</label>
               <input
@@ -120,23 +115,14 @@ function SignUpPage({ onLogin }) {
                 required
               />
             </div>
-            
-            <div className="form-group terms">
-              <input type="checkbox" id="terms" required />
-              <label htmlFor="terms">
-                I agree to the <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>
-              </label>
-            </div>
-            
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary btn-block"
               disabled={loading}
             >
               {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
-          
           <div className="auth-footer">
             <p>
               Already have an account? <Link to="/signin">Sign In</Link>

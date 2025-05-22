@@ -2,63 +2,47 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 function SignInPage({ onLogin }) {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState("weak");
   const navigate = useNavigate();
-
-  // Password strength checker
-  const checkPasswordStrength = (password) => {
-    if (password.length < 8) {
-      return "weak";
-    }
-    // You can add more rules here for stronger passwords
-    if (/[A-Za-z]/.test(password) && /[0-9]/.test(password)) {
-      return "strong";
-    }
-    return "medium";
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    if (name === "password") {
-      setPasswordStrength(checkPasswordStrength(value));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    // Password must be at least 8 characters
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long.");
-      return;
-    }
-
     setLoading(true);
-
-    // Simulate API call for authentication
-    setTimeout(() => {
-      if (formData.email && formData.password) {
-        const userData = { email: formData.email };
-        localStorage.setItem("user", JSON.stringify(userData));
-        onLogin(userData);
-        navigate("/");
-      } else {
-        setError("Invalid email or password");
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          (Array.isArray(data.error) && data.error[0]?.msg) ||
+            data.error ||
+            "Invalid email or password"
+        );
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    }, 1000);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ email: data.email, fullName: data.fullName })
+      );
+      if (onLogin) onLogin(data);
+      navigate("/");
+    } catch (err) {
+      setError("Server error");
+    }
+    setLoading(false);
   };
 
   return (
@@ -69,9 +53,7 @@ function SignInPage({ onLogin }) {
             <h1>Sign In</h1>
             <p>Welcome back to ProDiscuss</p>
           </div>
-          
           {error && <div className="auth-error">{error}</div>}
-          
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email</label>
@@ -85,7 +67,6 @@ function SignInPage({ onLogin }) {
                 required
               />
             </div>
-            
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <input
@@ -97,27 +78,15 @@ function SignInPage({ onLogin }) {
                 onChange={handleChange}
                 required
               />
-              <div className={`password-strength ${passwordStrength}`}>
-                Strength: 
-                {passwordStrength === "weak" && <span style={{ color: "red" }}> Weak</span>}
-                {passwordStrength === "medium" && <span style={{ color: "orange" }}> Medium</span>}
-                {passwordStrength === "strong" && <span style={{ color: "green" }}> Strong</span>}
-              </div>
             </div>
-            
-            <div className="form-group forgot-password">
-              <Link to="/forgot-password">Forgot Password?</Link>
-            </div>
-            
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary btn-block"
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-          
           <div className="auth-footer">
             <p>
               Don't have an account? <Link to="/signup">Sign Up</Link>
